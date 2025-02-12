@@ -1,0 +1,14 @@
+# Ignore virtual environment
+.venv/
+
+# Ignore system files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore environment configuration
+.env
+.DS_Store
+
+# Ignore dependency lock files (optional)
+Pipfile.lock

@@ -1,0 +1,93 @@
+from flask import Flask, request, redirect
+from flask_restful import Resource, Api
+from url_shortener import URLShortener
+import config
+from db import db, URLMapping  # Import database setup & model
+from cache import cache  # Import Redis client
+
+app = Flask(__name__)
+app.config.from_object(config)  # Load database configuration
+
+db.init_app(app)  # Initialize database with Flask app
+api = Api(app)
+
+with app.app_context():
+    db.create_all()  # Create tables if they don’t exist
+
+# Initialize URLShortenerService
+shortener_service = URLShortener()
+
+class URLResource(Resource):
+    def get(self, url_id):
+        """Retrieve long URL from short ID"""
+        full_url = cache.get(url_id)
+        if full_url:
+            print("Cache hit!")
+            cache.expire(url_id, 86400)
+            return {"value": full_url}, 301 #cache hit
+        
+        print(f"Cache miss, querying PostgreSQL...")
+        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        if url_mapping:
+            cache.setex(url_id, 86400, url_mapping.full_url) #store in redis for 24 hrs
+            return {"value": url_mapping.full_url}, 301  # Redirect to the original URL
+        return {"error": "Short URL not found"}, 404
+
+    def put(self, url_id):
+        """Update an existing short URL mapping"""
+        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        if not url_mapping:
+            return {"error": "Short URL not found"}, 404
+
+        data = request.get_json(force=True)
+        new_url = data.get("url")
+        
+        if not new_url or not shortener_service.validate_url(new_url):
+            return {"error": "Invalid URL format"}, 400
+
+        url_mapping.full_url = new_url
+        db.session.commit()
+        cache.setex(url_id, 86400, new_url) #update cache
+
+        return {"message": "URL updated successfully"}, 200
+
+    def delete(self, url_id):
+        """Delete a short URL mapping"""
+        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        if url_mapping:
+            db.session.delete(url_mapping)
+            db.session.commit()
+            cache.delete(url_id)
+            return '',204
+        return {"error": "Short URL not found"}, 404
+
+class URLCreationResource(Resource):
+
+    def post(self):
+        """Create a new short URL"""
+        data = request.get_json()
+        long_url = data.get("value")
+        if not long_url or not shortener_service.validate_url(long_url):
+            return {"error": "Invalid URL format"},400
+
+        # Generate a unique short ID and handle db operations.
+        short_id = shortener_service.shorten_url(long_url)
+
+        cache.setex(short_id, 86400, long_url) #cache for 24 hrs
+
+        return {"id": short_id}, 201
+
+class URLListResource(Resource):
+    def get(self):
+        """List all Short ID and Long URL pairs"""
+        url_mappings = URLMapping.query.all()
+        result = [{"short_id": url.short_id, "long_url": url.full_url} for url in url_mappings]
+        return {"url_mapping": result}, 200
+
+    def delete(self):
+        """Prevent bulk deletion (returns 404)"""
+        return {"error": "Bulk deletion is not allowed"},404
+
+api.add_resource(URLResource, "/<string:url_id>")  
+api.add_resource(URLCreationResource, "/")  
+api.add_resource(URLListResource,"/")
