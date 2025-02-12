@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from db import db
@@ -7,7 +7,7 @@ from models import User
 auth_blueprint = Blueprint("auth", __name__)
 bcrypt = Bcrypt()
 
-# 🔹 User Registration Route
+# User Registration Route
 @auth_blueprint.route("", methods=["POST"])
 def register_user():
     data = request.get_json()
@@ -29,39 +29,38 @@ def register_user():
 
     return {"message": "User registered successfully"}, 201
 
-# 🔹 User Login Route (Returns JWT)
+# User Login Route (Returns JWT)
 @auth_blueprint.route("/login", methods=["POST"])
 def login_user():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
 
-    # user = User.query.filter_by(username=username).first()
-    # if not user or not bcrypt.check_password_hash(user.password_hash, password):
-    #     return {"message": "Invalid username or password"}, 401
+    user = User.query.filter_by(username=username).first()
+    if not user or not bcrypt.check_password_hash(user.password_hash, password):
+        return {"message": "Invalid username or password"}, 401
 
-    access_token = create_access_token(identity=username)
+    access_token = create_access_token(identity=str(username))
     return {"access_token": access_token}, 200
 
-# 🔹 Update Password Route
+# Update Password Route
 @auth_blueprint.route("", methods=["PUT"])
-@jwt_required()
 def update_password():
     data = request.get_json()
-    user_id = get_jwt_identity()
+    username = data.get("username")
 
-    # user = User.query.get(user_id)
-    # if not user:
-    #     return jsonify({"message": "User not found"}), 404
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return {"message": "User not found"}, 404
 
-    # old_password = data.get("old_password")
-    # new_password = data.get("new_password")
+    old_password = data.get("old-password")
+    new_password = data.get("new-password")
 
-    # if not bcrypt.check_password_hash(user.password_hash, old_password):
-    #     return jsonify({"message": "Incorrect old password"}), 403
+    if not bcrypt.check_password_hash(user.password_hash, old_password):
+        return {"message": "Incorrect old password"}, 403
 
-    # user.password_hash = bcrypt.generate_password_hash(new_password).decode("utf-8")
-    # db.session.commit()
+    user.password_hash = bcrypt.generate_password_hash(new_password).decode("utf-8")
+    db.session.commit()
 
     return {"message": "Password updated successfully"}, 200
 
@@ -69,5 +68,5 @@ def update_password():
 @auth_blueprint.route("/protected", methods=["GET"])
 @jwt_required()
 def protected_route():
-    user_id = get_jwt_identity()
-    return jsonify({"message": f"Hello, User {user_id}! This is a protected route."})
+    username = get_jwt_identity()
+    return {"message": f"Hello, User {username}! This is a protected route."}
