@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, decode_token
 from db import db
 from models import User
 
@@ -64,9 +64,24 @@ def update_password():
 
     return {"message": "Password updated successfully"}, 200
 
-# 🔹 Protected Route Example
+# Protected Route Example
 @auth_blueprint.route("/protected", methods=["GET"])
 @jwt_required()
 def protected_route():
     username = get_jwt_identity()
     return {"message": f"Hello, User {username}! This is a protected route."}
+
+@auth_blueprint.route("/validate", methods=["POST"])
+def validate_jwt():
+    """Validate JWT sent by URL Shortener Service"""
+    data = request.get_json()
+    token = data.get("access_token")
+
+    if not token:
+        return {"message": "Missing access token"}, 400
+
+    try:
+        decoded_token = decode_token(token)  # Flask-JWT-Extended built-in function
+        return {"valid": True, "identity": decoded_token["sub"]}, 200  # `sub` contains the identity
+    except Exception as e:
+        return {"valid": False, "error": str(e)}, 403

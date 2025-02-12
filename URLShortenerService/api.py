@@ -4,7 +4,7 @@ from url_shortener import URLShortener
 import config
 from db import db, URLMapping  # Import database setup & model
 from cache import cache  # Import Redis client
-
+import requests
 app = Flask(__name__)
 app.config.from_object(config)  # Load database configuration
 
@@ -17,23 +17,49 @@ with app.app_context():
 # Initialize URLShortenerService
 shortener_service = URLShortener()
 
+# Auth Service URL
+AUTH_SERVICE_URL = "http://localhost:5001/users/validate"
+
+def validate_jwt(token):
+    """Send JWT to the Auth Service for validation"""
+    response = requests.post(AUTH_SERVICE_URL, json={"access_token": token})
+    
+    if response.status_code == 200 and response.json().get("valid"):
+        return response.json().get("identity")  # Return username from token
+    
+    return None  # Invalid token
+
+def extract_jwt():
+    """Extract JWT token from Authorization header"""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header.split(" ")[1]  # Extract token after "Bearer"
+    return None
+
 class URLResource(Resource):
     def get(self, url_id):
         """Retrieve long URL from short ID"""
-        full_url = cache.get(url_id)
-        if full_url:
-            print("Cache hit!")
-            cache.expire(url_id, 86400)
-            return {"value": full_url}, 301 #cache hit
+        # We cannot use cache anymore
+        # full_url = cache.get(url_id)
+        # if full_url:
+        #     print("Cache hit!")
+        #     cache.expire(url_id, 86400)
+        #     return {"value": full_url}, 301 #cache hit
         
-        print(f"Cache miss, querying PostgreSQL...")
+        # print(f"Cache miss, querying PostgreSQL...")
         url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
         if url_mapping:
-            cache.setex(url_id, 86400, url_mapping.full_url) #store in redis for 24 hrs
+            #cache.setex(url_id, 86400, url_mapping.full_url) #store in redis for 24 hrs
             return {"value": url_mapping.full_url}, 301  # Redirect to the original URL
         return {"error": "Short URL not found"}, 404
 
     def put(self, url_id):
+        # First validate the token
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        
         """Update an existing short URL mapping"""
         url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
         if not url_mapping:
@@ -47,23 +73,35 @@ class URLResource(Resource):
 
         url_mapping.full_url = new_url
         db.session.commit()
-        cache.setex(url_id, 86400, new_url) #update cache
+        #cache.setex(url_id, 86400, new_url) #update cache
 
         return {"message": "URL updated successfully"}, 200
 
     def delete(self, url_id):
+        # First validate the token
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        
         """Delete a short URL mapping"""
         url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
         if url_mapping:
             db.session.delete(url_mapping)
             db.session.commit()
-            cache.delete(url_id)
+            #cache.delete(url_id)
             return '',204
         return {"error": "Short URL not found"}, 404
 
 class URLCreationResource(Resource):
 
     def post(self):
+        # First validate the token
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        
         """Create a new short URL"""
         data = request.get_json()
         long_url = data.get("value")
@@ -73,18 +111,30 @@ class URLCreationResource(Resource):
         # Generate a unique short ID and handle db operations.
         short_id = shortener_service.shorten_url(long_url)
 
-        cache.setex(short_id, 86400, long_url) #cache for 24 hrs
+        #cache.setex(short_id, 86400, long_url) #cache for 24 hrs
 
         return {"id": short_id}, 201
 
 class URLListResource(Resource):
     def get(self):
+        # First validate the token
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        
         """List all Short ID and Long URL pairs"""
         url_mappings = URLMapping.query.all()
         result = [{"short_id": url.short_id, "long_url": url.full_url} for url in url_mappings]
         return {"url_mapping": result}, 200
 
     def delete(self):
+        # First validate the token
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        
         """Prevent bulk deletion (returns 404)"""
         return {"error": "Bulk deletion is not allowed"},404
 
