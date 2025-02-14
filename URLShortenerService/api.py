@@ -32,8 +32,12 @@ def validate_jwt(token):
 def extract_jwt():
     """Extract JWT token from Authorization header"""
     auth_header = request.headers.get("Authorization", "")
+    print(auth_header)
+    # Accept tokens start with Bearer for postman tests, accept pure tokens for unit tests.
     if auth_header.startswith("Bearer "):
         return auth_header.split(" ")[1]  # Extract token after "Bearer"
+    elif auth_header:
+        return auth_header
     return None
 
 class URLResource(Resource):
@@ -47,7 +51,11 @@ class URLResource(Resource):
         #     return {"value": full_url}, 301 #cache hit
         
         # print(f"Cache miss, querying PostgreSQL...")
-        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        token = extract_jwt()
+        username = validate_jwt(token)
+        if not username:
+            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+        url_mapping = URLMapping.query.filter_by(short_id=url_id, username=username).first()
         if url_mapping:
             #cache.setex(url_id, 86400, url_mapping.full_url) #store in redis for 24 hrs
             return {"value": url_mapping.full_url}, 301  # Redirect to the original URL
@@ -61,7 +69,7 @@ class URLResource(Resource):
             return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
         
         """Update an existing short URL mapping"""
-        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        url_mapping = URLMapping.query.filter_by(short_id=url_id, username=username).first()
         if not url_mapping:
             return {"error": "Short URL not found"}, 404
 
@@ -85,7 +93,7 @@ class URLResource(Resource):
             return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
         
         """Delete a short URL mapping"""
-        url_mapping = URLMapping.query.filter_by(short_id=url_id).first()
+        url_mapping = URLMapping.query.filter_by(short_id=url_id, username=username).first()
         if url_mapping:
             db.session.delete(url_mapping)
             db.session.commit()
@@ -109,7 +117,7 @@ class URLCreationResource(Resource):
             return {"error": "Invalid URL format"},400
 
         # Generate a unique short ID and handle db operations.
-        short_id = shortener_service.shorten_url(long_url)
+        short_id = shortener_service.shorten_url(long_url,username)
 
         #cache.setex(short_id, 86400, long_url) #cache for 24 hrs
 
@@ -124,7 +132,7 @@ class URLListResource(Resource):
             return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
         
         """List all Short ID and Long URL pairs"""
-        url_mappings = URLMapping.query.all()
+        url_mappings = URLMapping.query.filter_by(username=username).all()
         result = [{"short_id": url.short_id, "long_url": url.full_url} for url in url_mappings]
         return {"url_mapping": result}, 200
 

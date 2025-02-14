@@ -41,7 +41,7 @@ def login_user():
         return {"message": "Invalid username or password"}, 401
 
     access_token = create_access_token(identity=str(username))
-    return {"access_token": access_token}, 200
+    return {"token": access_token}, 200
 
 # Update Password Route
 @auth_blueprint.route("", methods=["PUT"])
