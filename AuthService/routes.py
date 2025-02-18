@@ -1,6 +1,6 @@
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, decode_token
+from jwt_handler import create_jwt, validate_jwt  
 from db import db
 from models import User
 
@@ -32,6 +32,7 @@ def register_user():
 # User Login Route (Returns JWT)
 @auth_blueprint.route("/login", methods=["POST"])
 def login_user():
+    """User login route that generates a manually signed JWT"""
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
@@ -40,8 +41,9 @@ def login_user():
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
         return {"message": "Invalid username or password"}, 401
 
-    access_token = create_access_token(identity=str(username))
-    return {"token": access_token}, 200
+    token = create_jwt(username, expiry_minutes=60)  # Generate JWT valid for 1 hour
+
+    return jsonify({"token": token}), 200
 
 # Update Password Route
 @auth_blueprint.route("", methods=["PUT"])
@@ -66,22 +68,27 @@ def update_password():
 
 # Protected Route Example
 @auth_blueprint.route("/protected", methods=["GET"])
-@jwt_required()
 def protected_route():
-    username = get_jwt_identity()
+    """Manually validate JWT instead of using @jwt_required()"""
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+
+    username = validate_jwt(token)  # Validate JWT manually
+    if not username:
+        return {"message": "Invalid or expired token"}, 403
+
     return {"message": f"Hello, User {username}! This is a protected route."}
 
 @auth_blueprint.route("/validate", methods=["POST"])
-def validate_jwt():
-    """Validate JWT sent by URL Shortener Service"""
+def validate_token():
+    """Validates JWT sent from other services"""
     data = request.get_json()
     token = data.get("access_token")
 
     if not token:
         return {"message": "Missing access token"}, 400
 
-    try:
-        decoded_token = decode_token(token)  # Flask-JWT-Extended built-in function
-        return {"valid": True, "identity": decoded_token["sub"]}, 200  # `sub` contains the identity
-    except Exception as e:
-        return {"valid": False, "error": str(e)}, 403
+    username = validate_jwt(token)
+    if not username:
+        return {"message": "Invalid or expired token"}, 403
+
+    return jsonify({"valid": True, "identity": username}), 200

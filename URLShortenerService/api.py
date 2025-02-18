@@ -32,8 +32,6 @@ def validate_jwt(token):
 def extract_jwt():
     """Extract JWT token from Authorization header"""
     auth_header = request.headers.get("Authorization", "")
-    print(auth_header)
-    # Accept tokens start with Bearer for postman tests, accept pure tokens for unit tests.
     if auth_header.startswith("Bearer "):
         return auth_header.split(" ")[1]  # Extract token after "Bearer"
     elif auth_header:
@@ -42,7 +40,6 @@ def extract_jwt():
 
 class URLResource(Resource):
     def get(self, url_id):
-        """Retrieve long URL from short ID"""
         # We cannot use cache anymore
         # full_url = cache.get(url_id)
         # if full_url:
@@ -51,14 +48,15 @@ class URLResource(Resource):
         #     return {"value": full_url}, 301 #cache hit
         
         # print(f"Cache miss, querying PostgreSQL...")
+        """Retrieve long URL from short ID"""
         token = extract_jwt()
-        username = validate_jwt(token)
+        username = validate_jwt(token)  # Validate JWT locally
         if not username:
-            return {"message": "Forbidden"}, 403  #Return 403 if token is invalid
+            return {"message": "Forbidden"}, 403  # Invalid token
+        
         url_mapping = URLMapping.query.filter_by(short_id=url_id, username=username).first()
         if url_mapping:
-            #cache.setex(url_id, 86400, url_mapping.full_url) #store in redis for 24 hrs
-            return {"value": url_mapping.full_url}, 301  # Redirect to the original URL
+            return {"value": url_mapping.full_url}, 301  # Redirect to original URL
         return {"error": "Short URL not found"}, 404
 
     def put(self, url_id):

@@ -47,6 +47,9 @@ URL validator: https://yozachar.github.io/pyvalidators/stable/api/url/
 We used the source code below to come up with the shortening algorithm.
 Shortening algorithm: https://play.golang.com/p/DmFYZXWdzDU
 
+This JWT implementation was manually written, taking inspiration from Stack Overflow but modified to match our requirements.
+Adam DS, "Python manually create jwt token without library", Stack Overflow, Oct 29, 2021. Available: https://stackoverflow.com/questions/68274543/python-manually-create-jwt-token-without-library.
+
 ## 📌 API Endpoints
 
 | **Method** | **Endpoint** | **Description**                 |
@@ -56,4 +59,3 @@ Shortening algorithm: https://play.golang.com/p/DmFYZXWdzDU
 | `GET`      | `/<id>`      | Retrieve full URL from short ID |
 | `PUT`      | `/<id>`      | Update an existing short URL    |
 | `DELETE`   | `/<id>`      | Delete a short URL              |
-

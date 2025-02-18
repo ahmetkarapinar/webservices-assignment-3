@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager
 from config import Config
 from db import db
 from routes import auth_blueprint
@@ -13,7 +12,6 @@ app.config.from_object(Config)
 # Initialize Database and Security Modules
 db.init_app(app)
 bcrypt = Bcrypt(app)
-jwt = JWTManager(app)
 
 # Register Blueprints (Routes)
 app.register_blueprint(auth_blueprint, url_prefix="/users")
