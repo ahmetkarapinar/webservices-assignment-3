@@ -38,7 +38,28 @@ docker-compose up --build -d
 python run.py
 ```
 
+## Running the Microservices
+
+### Running AuthService
+
+To start the **AuthService**, navigate into its folder and run `app.py`:
+
+```bash
+cd AuthService
+python app.py
+```
+
 AuthService (Authentication & JWT Management) → Accessible at http://127.0.0.1:5001/
+
+### Running URLShortenerService
+
+To start the **URLShortenerService**, navigate into its folder and run `run.py`:
+
+```bash
+cd URLShortenerService
+python run.py
+```
+
 URLShortenerService (URL Shortening & Management) → Accessible at http://127.0.0.1:5000/
 
 ## Code Sources
@@ -51,9 +72,7 @@ Shortening algorithm: https://play.golang.com/p/DmFYZXWdzDU
 This JWT implementation was manually written, taking inspiration from Stack Overflow but modified to match our requirements.
 Adam DS, "Python manually create jwt token without library", Stack Overflow, Oct 29, 2021. Available: https://stackoverflow.com/questions/68274543/python-manually-create-jwt-token-without-library.
 
-## 📌 API Endpoints
-
-## 🚀 API Endpoints
+## API Endpoints
 
 ### AuthService (`http://127.0.0.1:5001/`)
 
