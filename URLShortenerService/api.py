@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect
 from flask_restful import Resource, Api
 from url_shortener import URLShortener
-import config
+import config, os
 from db import db, URLMapping  # Import database setup & model
 from cache import cache  # Import Redis client
 import requests
@@ -17,8 +17,9 @@ with app.app_context():
 # Initialize URLShortenerService
 shortener_service = URLShortener()
 
-# Auth Service URL
-AUTH_SERVICE_URL = "http://localhost:5001/users/validate"
+
+# Get the auth service URL from environment variables
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:5001/users/validate")
 
 def validate_jwt(token):
     """Send JWT to the Auth Service for validation"""

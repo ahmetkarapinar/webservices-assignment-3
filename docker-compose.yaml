@@ -1,4 +1,30 @@
 services:
+  urlshortener:
+    build: ./URLShortenerService
+    container_name: urlshortener
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/urlshortener
+      AUTH_SERVICE_URL: http://authservice:5001/users/validate # Use service name instead of localhost
+    ports:
+      - '5000:5000'
+    depends_on:
+      - postgres
+    volumes:
+      - ./URLShortenerService:/app/URLShortenerService
+
+  authservice:
+    build: ./AuthService
+    container_name: authservice
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/urlshortener
+    ports:
+      - '5001:5001'
+    depends_on:
+      - postgres
+    volumes:
+      - ./AuthService:/app/AuthService
   postgres:
     image: postgres:13 # Use PostgreSQL version 13
     restart: always
@@ -22,7 +48,7 @@ services:
     ports:
       - '5050:80'
     depends_on:
-      - db
+      - postgres
 
 volumes:
   pgdata:

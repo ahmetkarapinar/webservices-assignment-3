@@ -30,7 +30,7 @@ class URLShortener:
     
     def shorten_url(self, long_url, username):
         """Shorten a URL and store it in the database."""
-        existing_entry = URLMapping.query.filter_by(full_url=long_url).first()
+        existing_entry = URLMapping.query.filter_by(full_url=long_url, username=username).first()
         if existing_entry:
             return existing_entry.short_id
 
