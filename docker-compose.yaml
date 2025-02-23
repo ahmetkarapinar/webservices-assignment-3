@@ -1,10 +1,10 @@
 services:
-  db:
+  postgres:
     image: postgres:13 # Use PostgreSQL version 13
     restart: always
-    container_name: postgres_db
+    container_name: postgres
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: urlshortener
     ports:
@@ -12,35 +12,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data # Persistent storage
 
-  redis:
-    image: redis:latest
-    container_name: redis_cache
-    restart: always
-    ports:
-      - '6379:6379'
-
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - '5050:80'
     depends_on:
       - db
-
-  redis-commander:
-    image: rediscommander/redis-commander
-    container_name: redis_commander
-    restart: always
-    environment:
-      REDIS_HOSTS: local:redis:6379
-    ports:
-      - '8081:8081'
-    depends_on:
-      - redis
 
 volumes:
   pgdata:
