@@ -41,7 +41,7 @@ class URLShortener:
 
         # Ensure uniqueness
         attempt = 0
-        while URLMapping.query.filter_by(short_id=short_code).first():
+        while URLMapping.query.filter_by(short_id=short_code, username=username).first():
             attempt += 1
             print(f"Collision detected! Attempt {attempt} generating new short code...")
             # Generate a random salt (5-character alphanumeric string)
