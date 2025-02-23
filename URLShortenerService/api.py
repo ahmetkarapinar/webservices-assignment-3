@@ -23,6 +23,7 @@ AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:5001/users/va
 
 def validate_jwt(token):
     """Send JWT to the Auth Service for validation"""
+
     response = requests.post(AUTH_SERVICE_URL, json={"access_token": token})
     
     if response.status_code == 200 and response.json().get("valid"):
