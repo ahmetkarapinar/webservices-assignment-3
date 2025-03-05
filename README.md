@@ -7,60 +7,19 @@ This project consists of two Flask-based microservices: an authentication servic
 ### 1️. Clone the Repository
 
 ```sh
-git clone https://github.com/ahmetkarapinar/WebServicesAssignment2.git
+git clone https://github.com/ahmetkarapinar/webservices-assignment-3
+
 ```
 
-### 2️. Set Up a Virtual Environment
-
-```sh
-python -m venv .venv  # Create virtual environment
-source .venv/Scripts/activate  # Activate it (Windows)
-source venv/bin/activate # Activate it (macOS/Linux)
-```
-
-### 3️. Install Dependencies
-
-```sh
-pip install -r requirements.txt
-pip install psycopg2-binary
-pip install validators
-```
-
-### 4. Start the DB with Docker Compose
+### 2. Start Services with Docker Compose
 
 ```sh
 docker-compose up --build -d
 ```
 
-## Running the Flask API Locally
+AuthService (Authentication & JWT Management) → Accessible at http://127.0.0.1:8080/
 
-```sh
-python run.py
-```
-
-## Running the Microservices
-
-### Running AuthService
-
-To start the **AuthService**, navigate into its folder and run `app.py`:
-
-```bash
-cd AuthService
-python app.py
-```
-
-AuthService (Authentication & JWT Management) → Accessible at http://127.0.0.1:5001/
-
-### Running URLShortenerService
-
-To start the **URLShortenerService**, navigate into its folder and run `run.py`:
-
-```bash
-cd URLShortenerService
-python run.py
-```
-
-URLShortenerService (URL Shortening & Management) → Accessible at http://127.0.0.1:5000/
+URLShortenerService (URL Shortening & Management) → Accessible at http://127.0.0.1:8080/
 
 ## Code Sources
 
@@ -74,7 +33,7 @@ Adam DS, "Python manually create jwt token without library", Stack Overflow, Oct
 
 ## API Endpoints
 
-### AuthService (`http://127.0.0.1:5001/`)
+### AuthService (`http://127.0.0.1:8080/`)
 
 | **Method** | **Endpoint**       | **Description**                  |
 | ---------- | ------------------ | -------------------------------- |
@@ -86,7 +45,7 @@ Adam DS, "Python manually create jwt token without library", Stack Overflow, Oct
 
 ---
 
-### URLShortenerService (`http://127.0.0.1:5000/`)
+### URLShortenerService (`http://127.0.0.1:8080/`)
 
 | **Method** | **Endpoint** | **Description**                 |
 | ---------- | ------------ | ------------------------------- |
