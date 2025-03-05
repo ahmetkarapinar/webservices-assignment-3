@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authservice
+  template:
+    metadata:
+      labels:
+        app: authservice
+    spec:
+      containers:
+        - name: authservice
+          image: docker.io/ahmetkarapinar/authservice:latest # You need to build this image
+          imagePullPolicy: Always # Prevent Kubernetes from pulling from Docker Hub
+          ports:
+            - containerPort: 5001
+          env:
+            - name: DATABASE_URL
+              value: 'postgresql://user:password@postgres:5432/urlshortener'
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authservice
+spec:
+  type: NodePort #ClusterIP
+  selector:
+    app: authservice
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+      nodePort: 30001 # Choose a port in the 30000-32767 range

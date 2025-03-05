@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urlshortener
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: urlshortener
+  template:
+    metadata:
+      labels:
+        app: urlshortener
+    spec:
+      containers:
+        - name: urlshortener
+          image: ahmetkarapinar/urlshortener:latest # You need to build this image
+          imagePullPolicy: Always # Prevent Kubernetes from pulling from Docker Hub
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DATABASE_URL
+              value: 'postgresql://user:password@postgres:5432/urlshortener'
+            - name: AUTH_SERVICE_URL
+              value: 'http://authservice:5001/users/validate'
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: urlshortener
+spec:
+  type: NodePort #ClusterIP
+  selector:
+    app: urlshortener
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      nodePort: 30002 # Choose a port in the 30000-32767 range
